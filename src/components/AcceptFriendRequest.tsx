@@ -17,12 +17,12 @@ import {
   where,
 } from 'firebase/firestore'
 import { useContext, useEffect, useState } from 'react'
-import { userContext } from '../context/userContext'
+import { userContext } from '../context/context'
 import { db } from '../libs/firebase'
 
 export const AcceptFriendRequest = () => {
   const [friends, setFriends] = useState<DocumentData>([])
-  const user = useContext(userContext) // Use proper context variable name
+  const user = useContext(userContext)
   const theme = useMantineTheme()
 
   useEffect(() => {

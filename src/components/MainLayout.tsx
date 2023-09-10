@@ -12,15 +12,21 @@ import {
   useMantineTheme,
 } from '@mantine/core'
 import { useContext, useState } from 'react'
-import { Outlet } from 'react-router-dom'
-import { userContext } from '../context/userContext'
+import {
+  userContext,
+  userSelectedFriendDataContex,
+  userSelectedFriendIdContext,
+} from '../context/context'
 import { ChatInput } from './ChatInput'
+import { MessageBox } from './MessageBox'
 import { Sidebar } from './Sidebar'
 
 export default function MainLayout() {
   const user = useContext(userContext)
+  const userSelectedFriendId = useContext(userSelectedFriendIdContext)
   const theme = useMantineTheme()
   const [opened, setOpened] = useState(false)
+  const userSelectedFriendData = useContext(userSelectedFriendDataContex)
 
   return (
     <AppShell
@@ -88,12 +94,38 @@ export default function MainLayout() {
         </Header>
       }
     >
-      <div className="background-pattern flex h-full w-full flex-col">
-        <div className="flex h-full w-full">
-          <Outlet />
+      {userSelectedFriendId.userSelectedFriendId ? (
+        <div className="background-pattern flex h-full w-full flex-col">
+          <div
+            className="h-16 bg-white"
+            style={{
+              borderBottom: `1px solid ${theme.colors.gray[3]}`,
+            }}
+          >
+            <UnstyledButton className="flex w-full flex-col items-start justify-center rounded-md p-3">
+              <div className="flex items-center justify-center space-x-3">
+                <Avatar
+                  src={userSelectedFriendData.userSelectedFriendData?.photoURL}
+                  size={'md'}
+                  radius={'md'}
+                />
+                <div className="w-48">
+                  <Text size={'xs'} color="dark" truncate>
+                    {userSelectedFriendData.userSelectedFriendData?.displayName}
+                  </Text>
+                  <Text size={'xs'} color="gray" truncate>
+                    {userSelectedFriendData.userSelectedFriendData?.email}
+                  </Text>
+                </div>
+              </div>
+            </UnstyledButton>
+          </div>
+          <div className="flex h-full w-full">
+            <MessageBox />
+          </div>
+          <ChatInput />
         </div>
-        <ChatInput />
-      </div>
+      ) : null}
     </AppShell>
   )
 }

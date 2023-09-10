@@ -9,7 +9,7 @@ import {
   where,
 } from 'firebase/firestore'
 import { useContext, useState } from 'react'
-import { userContext } from '../context/userContext'
+import { userContext } from '../context/context'
 import { db } from '../libs/firebase'
 
 export function AddFriend() {
