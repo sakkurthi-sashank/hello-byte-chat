@@ -28,7 +28,11 @@ export const FriendList = () => {
   const userSelectedFriendData = useContext(userSelectedFriendDataContex)
 
   useEffect(() => {
-    const friendsCollection = collection(db, 'users', user?.uid!, 'friends')
+    const userId = user?.uid
+
+    if (!userId) return
+
+    const friendsCollection = collection(db, 'users', userId, 'friends')
     const collectAcceptedFriend = query(
       friendsCollection,
       where('status', '==', 'accepted'),

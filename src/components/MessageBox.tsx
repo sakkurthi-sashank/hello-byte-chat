@@ -24,13 +24,13 @@ interface Message {
   }
 }
 
-export const MessageBox: React.FC = () => {
-  const user = useContext(userContext)
-  const userSelectedFriendId = useContext(userSelectedFriendIdContext)
+export function MessageBox() {
+  const currentUser = useContext(userContext)
+  const selectedFriendId = useContext(userSelectedFriendIdContext)
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[] | null>(null)
 
-  const formatMessageDate = (timestamp: Date): string => {
+  const formatTimestamp = (timestamp: Date): string => {
     return timestamp.toLocaleString('default', {
       year: 'numeric',
       month: 'short',
@@ -41,31 +41,27 @@ export const MessageBox: React.FC = () => {
   }
 
   useEffect(() => {
-    if (!user?.uid || !userSelectedFriendId?.userSelectedFriendId) return
+    if (!currentUser?.uid || !selectedFriendId?.userSelectedFriendId) return
 
-    const getMessages = async () => {
+    const fetchMessages = async () => {
       const messageCollection = collection(db, 'messages')
 
-      const queryMessages = query(
+      const messageQuery = query(
         messageCollection,
         or(
           and(
-            where('senderId', '==', user?.uid),
-            where(
-              'receiverId',
-              '==',
-              userSelectedFriendId?.userSelectedFriendId,
-            ),
+            where('senderId', '==', currentUser?.uid),
+            where('receiverId', '==', selectedFriendId?.userSelectedFriendId),
           ),
           and(
-            where('senderId', '==', userSelectedFriendId?.userSelectedFriendId),
-            where('receiverId', '==', user?.uid),
+            where('senderId', '==', selectedFriendId?.userSelectedFriendId),
+            where('receiverId', '==', currentUser?.uid),
           ),
         ),
       )
 
-      const messageData = onSnapshot(queryMessages, (snapshot) => {
-        const messages = snapshot.docs
+      const messageData = onSnapshot(messageQuery, (snapshot) => {
+        const sortedMessages = snapshot.docs
           .map((doc) => ({
             id: doc.id,
             content: doc.data().content,
@@ -73,21 +69,16 @@ export const MessageBox: React.FC = () => {
             timestamp: doc.data().timestamp,
             profileURL: doc.data().profileURL,
           }))
-          .sort((a, b) => {
-            return (
-              a.timestamp.toDate().getTime() - b.timestamp.toDate().getTime()
-            )
-          })
+          .sort((a, b) => a.timestamp.toDate() - b.timestamp.toDate())
 
-        console.log(messages)
-        setMessages(messages)
+        setMessages(sortedMessages)
       })
 
       return messageData
     }
 
-    getMessages()
-  }, [user?.uid, userSelectedFriendId?.userSelectedFriendId])
+    fetchMessages()
+  }, [currentUser?.uid, selectedFriendId?.userSelectedFriendId])
 
   const deleteMessage = async (messageId: string) => {
     deleteDoc(doc(db, 'messages', messageId))
@@ -98,10 +89,10 @@ export const MessageBox: React.FC = () => {
       {messages?.map((message, index) => (
         <div
           key={index}
-          className={`flex flex-col w-full justify-center`}
+          className="flex flex-col w-full justify-center"
           style={{
             alignItems:
-              message.senderId === user?.uid ? 'flex-end' : 'flex-start',
+              message.senderId === currentUser?.uid ? 'flex-end' : 'flex-start',
           }}
           onMouseEnter={() => setHoveredMessageId(message.id)}
           onMouseLeave={() => setHoveredMessageId(null)}
@@ -110,28 +101,28 @@ export const MessageBox: React.FC = () => {
             className="flex cursor-pointer flex-row items-center justify-center"
             style={{
               flexDirection:
-                message.senderId === user?.uid ? 'row-reverse' : 'row',
+                message.senderId === currentUser?.uid ? 'row-reverse' : 'row',
             }}
           >
             <Avatar src={message.profileURL} size={'md'} radius={'md'} />
             <div className="bg-white rounded-lg px-4 py-2 m-4 h-fit w-fit border border-gray-100 shadow">
               <div className="text-gray-700">{message.content}</div>
               <div className="text-xs text-gray-500 text-end">
-                {message.timestamp
-                  ? formatMessageDate(message.timestamp.toDate())
-                  : ''}
+                {message.timestamp &&
+                  formatTimestamp(message.timestamp.toDate())}
               </div>
             </div>
-            {hoveredMessageId === message.id && (
-              <ActionIcon
-                size="xs"
-                variant="light"
-                color="gray"
-                onClick={() => deleteMessage(message.id)}
-              >
-                <IconTrash />
-              </ActionIcon>
-            )}
+            {hoveredMessageId === message.id &&
+              currentUser?.uid === message.senderId && (
+                <ActionIcon
+                  size="xs"
+                  variant="light"
+                  color="gray"
+                  onClick={() => deleteMessage(message.id)}
+                >
+                  <IconTrash />
+                </ActionIcon>
+              )}
           </div>
         </div>
       ))}
