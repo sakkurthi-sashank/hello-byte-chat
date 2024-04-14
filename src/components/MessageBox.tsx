@@ -1,5 +1,6 @@
-import { ActionIcon, Avatar } from '@mantine/core'
-import { IconTrash } from '@tabler/icons-react'
+import { ActionIcon, Avatar, Modal } from '@mantine/core'
+import { useDisclosure } from '@mantine/hooks'
+import { IconFileText, IconTrash } from '@tabler/icons-react'
 import {
   and,
   collection,
@@ -18,7 +19,9 @@ interface Message {
   id: string
   profileURL: string
   content: string
+  imageURL?: string
   senderId: string
+  fileType?: string
   timestamp: {
     toDate: () => Date
   }
@@ -29,6 +32,57 @@ export function MessageBox() {
   const selectedFriendId = useContext(userSelectedFriendIdContext)
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[] | null>(null)
+  const [opened, { open, close }] = useDisclosure(false)
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
+
+  const DispalyMediaContent = ({
+    fileType,
+    imageURL,
+  }: {
+    fileType: string
+    imageURL: string
+  }) => {
+    if (fileType.toUpperCase() === 'MP4' || fileType.toUpperCase() === 'HEVC') {
+      return (
+        <video controls className="w-60 h-60 rounded-md mt-2">
+          <source src={imageURL} type="video/mp4" />
+        </video>
+      )
+    } else if (
+      fileType.toUpperCase() === 'png'.toUpperCase() ||
+      fileType.toUpperCase() === 'jpg'.toUpperCase() ||
+      fileType.toUpperCase() === 'jpeg'.toUpperCase()
+    ) {
+      return (
+        <>
+          <img
+            onClick={
+              imageURL
+                ? () => {
+                    setSelectedImage(imageURL)
+                    open()
+                  }
+                : undefined
+            }
+            src={imageURL}
+            alt="message"
+            className="w-60 h-60 rounded-md mt-2"
+          />
+          <Modal size="auto" opened={opened} onClose={close}>
+            <img alt="message" width={500} height={500} src={selectedImage!} />
+          </Modal>
+        </>
+      )
+    } else {
+      return (
+        <a href={imageURL} target='_blank' download>
+          <div className="bg-gray-100 h-40 w-40 rounded-md mt-2 flex items-center justify-center">
+            <IconFileText size={40} />
+          </div>
+        </a>
+      )
+    }
+  }
 
   const formatTimestamp = (timestamp: Date): string => {
     return timestamp.toLocaleString('default', {
@@ -68,6 +122,8 @@ export function MessageBox() {
             senderId: doc.data().senderId,
             timestamp: doc.data().timestamp,
             profileURL: doc.data().profileURL,
+            fileType: doc.data().fileType,
+            imageURL: doc.data().imageURL,
           }))
           .sort((a, b) => a.timestamp.toDate() - b.timestamp.toDate())
 
@@ -111,6 +167,12 @@ export function MessageBox() {
                 {message.timestamp &&
                   formatTimestamp(message.timestamp.toDate())}
               </div>
+              {message.imageURL && (
+                <DispalyMediaContent
+                  fileType={message.fileType!}
+                  imageURL={message.imageURL!}
+                />
+              )}
             </div>
             {hoveredMessageId === message.id &&
               currentUser?.uid === message.senderId && (
